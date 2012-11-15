@@ -80,8 +80,8 @@ void * cloud_cb(const MyPointCloud::ConstPtr &cloud, int nDevice)
     //p.Execute(cloud,mycloud[nDevice]);
     vg.setInputCloud (cloud);
     vg.filter (*(mycloud[nDevice]));
-   // pass_.setInputCloud(mycloud[nDevice]);
-    //pass_.filter(*(mycloud[nDevice]));
+    pass_.setInputCloud(mycloud[nDevice]);
+    pass_.filter(*(mycloud[nDevice]));
     //*mycloud[nDevice] = *cloud;
     if(saveClouds[nDevice]){
         cout << "Grabbing frame from kinect : " << nDevice << endl;
@@ -123,9 +123,9 @@ void StartDevice(int arg){
 void executeComplexICP(MyPointCloud::Ptr input, MyPointCloud::Ptr target, MyPointCloud::Ptr out){
     pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
     icp.setMaxCorrespondenceDistance (1);
-    icp.setRANSACIterations(5);
-    icp.setRANSACOutlierRejectionThreshold(0.5);
-    icp.setMaximumIterations (10);
+    icp.setRANSACIterations(10);
+    icp.setRANSACOutlierRejectionThreshold(0.05);
+    icp.setMaximumIterations (100);
     icp.setEuclideanFitnessEpsilon(0.000000005);
     icp.setInputCloud(input);
     icp.setInputTarget(target);
@@ -295,7 +295,10 @@ int main(int argc, char** argv) {
     Eigen::Matrix<float,3,1> Teigen,Teigen3;
     Eigen::Matrix<float,4,4> R4eigen;
     Eigen::Matrix<float,4,1> T4eigen;
-    Eigen::Matrix<float,4,4> Aff,Aff2;
+    Eigen::Matrix<float,3,3> Bo;
+    Eigen::Matrix<float,3,1> vett;
+    Eigen::Matrix<float,1,4> vett2;
+    Eigen::Matrix<float,4,4> Aff,Aff2,A,B;
     cv::Mat R,T;
     cv::FileStorage fs("calibration_multikinect.yml", cv::FileStorage::READ);
 //    if(fs.isOpened()){
@@ -304,15 +307,28 @@ int main(int argc, char** argv) {
         cv2eigen(R,Reigen);
         cv2eigen(T,Teigen);
 //    }
-    cout << R << endl;
-    cout << T << endl;
+//    cout << R << endl;
+//    cout << T << endl;
    // Teigen2 << 0.f,0.f,0.f;
    Reigen3 << 1.f,0.f,0.f,
            0.f,-1,-0.f,
            0.f,0.f,-1.f;
-   //Teigen3 << 0.8771,0.1061,0.0380;
+//   //Teigen3 << 0.8771,0.1061,0.0380;
    Teigen3 << 0.f,0.f,0.f;
-   
+    vett << 0.0,0.0,0.0;
+    Bo << 1,0,0,
+            0,1,0,
+            0,0,1;
+    vett2 << 0,0,0,1;
+    
+    cout << Bo << endl;
+    A << Bo,Teigen,vett2;
+    B << Reigen,vett,0.0,0.0,0.0,1.0;
+    
+    
+    cout << A << endl;
+   cout << B << endl;
+    
    //R4eigen << Reigen,0.f,0.f,0.f,0.f,0.f,1.0f,0.f;
    
    //cout << R4eigen << endl;
@@ -320,16 +336,14 @@ int main(int argc, char** argv) {
 //    Teigen[1]=-Teigen[1]*1.5f;
 //    Teigen[2]=Teigen[2]*15.0f;
     //Aff << Reigen,Teigen,0.877122f,0.10606f,0.380098f,1.0f;
-   
-    Aff << Reigen3,Teigen3,0.0,0.0,0.0,1.0f;
     
     
     
-   // Aff2 << Reigen2,Teigen,0.0,0.0,0.0,1.0f;
     
+   // Aff2 << Reigen2,Teigen,0.0,0.0,0.0,1.0f;  
+   Aff= A*B;
+   Aff2 << Reigen3,Teigen3,0.0,0.0,0.0,1.0f;
     cout << Aff << endl;
-   // cout << Aff2 << endl;
-    
     
     //p.AddPipelineStage("passthrough",&pass_);
   //  p.AddPipelineStage("voxelgrid", &vg);
@@ -381,17 +395,15 @@ int main(int argc, char** argv) {
             boost::mutex::scoped_lock lock (mtx_);
             MyPointCloud::Ptr tmp_point;
             tmp_point.swap(mycloud[0]);
-          // pcl::transformPointCloud(*tmp_point,*tmp_point,Aff2);
-            pcl::transformPointCloud(*tmp_point,*tmp_point,Aff);
+            pcl::transformPointCloud(*tmp_point,*tmp_point,Aff2);
             viewer.updatePointCloud(tmp_point,"kinect1");
         }
         if(mycloud[1]){
             boost::mutex::scoped_lock lock (mtx_);
             MyPointCloud::Ptr second_tmp;
             second_tmp.swap(mycloud[1]);
+          pcl::transformPointCloud(*second_tmp,*second_tmp,Aff2);
           pcl::transformPointCloud(*second_tmp,*second_tmp,Aff);
-           // pcl::transformPointCloud(*second_tmp,*second_tmp,Aff);
-            //pcl::transformPointCloud(*second_tmp,*second_tmp,Aff2);
             viewer.updatePointCloud(second_tmp,"kinect2");
             
         }
