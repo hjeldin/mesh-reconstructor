@@ -366,6 +366,13 @@ build/Debug/GNU-Linux-x86/newmain.o: newmain.cpp \
  /usr/local/include/pcl-1.5/pcl/io/file_io.h \
  /usr/local/include/pcl-1.5/pcl/io/impl/pcd_io.hpp \
  /usr/local/include/pcl-1.5/pcl/io/lzf.h \
+ /usr/local/include/pcl-1.5/pcl/io/ply_io.h \
+ /usr/local/include/pcl-1.5/pcl/io/ply/ply_parser.h \
+ /usr/local/include/pcl-1.5/pcl/io/ply/ply.h \
+ /usr/local/include/pcl-1.5/pcl/io/ply/byte_order.h \
+ /usr/local/include/pcl-1.5/pcl/io/ply/io_operators.h \
+ /usr/local/include/pcl-1.5/pcl/PolygonMesh.h \
+ /usr/local/include/pcl-1.5/pcl/Vertices.h \
  /usr/local/include/pcl-1.5/pcl/filters/voxel_grid.h utilities.h \
  Pipeline.h
 
@@ -1168,6 +1175,20 @@ build/Debug/GNU-Linux-x86/newmain.o: newmain.cpp \
 /usr/local/include/pcl-1.5/pcl/io/impl/pcd_io.hpp:
 
 /usr/local/include/pcl-1.5/pcl/io/lzf.h:
+
+/usr/local/include/pcl-1.5/pcl/io/ply_io.h:
+
+/usr/local/include/pcl-1.5/pcl/io/ply/ply_parser.h:
+
+/usr/local/include/pcl-1.5/pcl/io/ply/ply.h:
+
+/usr/local/include/pcl-1.5/pcl/io/ply/byte_order.h:
+
+/usr/local/include/pcl-1.5/pcl/io/ply/io_operators.h:
+
+/usr/local/include/pcl-1.5/pcl/PolygonMesh.h:
+
+/usr/local/include/pcl-1.5/pcl/Vertices.h:
 
 /usr/local/include/pcl-1.5/pcl/filters/voxel_grid.h:
 
