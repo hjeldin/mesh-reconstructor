@@ -9,14 +9,11 @@
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
                    projectFiles="true">
-      <itemPath>Pipeline.h</itemPath>
     </logicalFolder>
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>Pipeline.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
-      <itemPath>newmain.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
                    displayName="Test Files"
@@ -43,7 +40,7 @@
             <pElem>/usr/include/vtk-5.8</pElem>
             <pElem>/usr/include/eigen3</pElem>
             <pElem>/usr/local/include/pcl-1.5</pElem>
-            <pElem>../OpenNi/OpenNI/Include</pElem>
+            <pElem>../../../OpenNi/OpenNI/Include</pElem>
           </incDir>
         </ccTool>
         <linkerTool>

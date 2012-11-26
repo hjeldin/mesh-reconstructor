@@ -35,9 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/main.o \
-	${OBJECTDIR}/Pipeline.o \
-	${OBJECTDIR}/newmain.o
+	${OBJECTDIR}/main.o
 
 
 # C Compiler Flags
@@ -71,17 +69,7 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/drunken-ironman-revenge: ${OBJECTFILE
 ${OBJECTDIR}/main.o: main.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} $@.d
-	$(COMPILE.cc) -g -I/usr/include/vtk-5.8 -I/usr/include/eigen3 -I/usr/local/include/pcl-1.5 -I../OpenNi/OpenNI/Include -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
-
-${OBJECTDIR}/Pipeline.o: Pipeline.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -g -I/usr/include/vtk-5.8 -I/usr/include/eigen3 -I/usr/local/include/pcl-1.5 -I../OpenNi/OpenNI/Include -MMD -MP -MF $@.d -o ${OBJECTDIR}/Pipeline.o Pipeline.cpp
-
-${OBJECTDIR}/newmain.o: newmain.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	${RM} $@.d
-	$(COMPILE.cc) -g -I/usr/include/vtk-5.8 -I/usr/include/eigen3 -I/usr/local/include/pcl-1.5 -I../OpenNi/OpenNI/Include -MMD -MP -MF $@.d -o ${OBJECTDIR}/newmain.o newmain.cpp
+	$(COMPILE.cc) -g -I/usr/include/vtk-5.8 -I/usr/include/eigen3 -I/usr/local/include/pcl-1.5 -I../../../OpenNi/OpenNI/Include -MMD -MP -MF $@.d -o ${OBJECTDIR}/main.o main.cpp
 
 # Subprojects
 .build-subprojects:

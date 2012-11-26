@@ -17,31 +17,25 @@
 #include <sstream>
 #include <string>
 #include <pcl/io/openni_grabber.h>
-#include <pcl/range_image/range_image.h>
-#include <pcl/visualization/range_image_visualizer.h>
-#include <pcl/features/range_image_border_extractor.h>
-#include <pcl/keypoints/narf_keypoint.h>
+#include <pcl-1.5/pcl/visualization/cloud_viewer.h>
 #include <pcl/registration/icp.h>
 #include <pcl/common/io.h>
 #include <pcl/common/transforms.h>
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <pcl/filters/passthrough.h>
-#include <pcl/filters/bilateral.h>
-#include <pcl/surface/mls.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <list>
+#include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/random_sample.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/eigen.hpp>
 #include "utilities.h"
-#include "Pipeline.h"
+
 
 using namespace std;
 
-Pipeline p;
 boost::mutex mtx_,mtxAsync0,mtxAsync1,mtxAsync2;
 
 pcl::VoxelGrid<pcl::PointXYZRGBA> vg;
@@ -53,18 +47,6 @@ MyPointCloud::Ptr myScloud(new MyPointCloud);
 MyPointCloud::Ptr thirdCloud(new MyPointCloud);
 MyPointCloud::Ptr myTcloud(new MyPointCloud);
 pcl::PassThrough<PointType> pass_;
-Eigen::Affine3f scene_sensor_pose (Eigen::Affine3f::Identity ());
-float noise_level = 0.0;
-float min_range = 0.0f;
-int border_size = 1;
-float angular_resolution = 0.5f;
-float support_size = 0.2f;
-pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
-bool setUnseenToMaxRange = false;
-
-boost::shared_ptr<pcl::RangeImage> range_image_ptr (new pcl::RangeImage);
-pcl::RangeImage& range_image = *range_image_ptr;   
-
 bool saveClouds[3]= {false,false,false};
 int nSaved = 0;
 int nDevices = 2;
@@ -74,16 +56,25 @@ bool async = true;
 pcl::Grabber * grabbers[3];
 bool updatedText = true;
 Eigen::Matrix4f transformation;
+Eigen::Matrix<float,4,4> Aff,Aff2,A,B;
 
 void * cloud_cb(const MyPointCloud::ConstPtr &cloud, int nDevice)
 {
     boost::mutex::scoped_lock lock(mtx_);
     mycloud[nDevice].reset(new MyPointCloud);
-    //p.Execute(cloud,mycloud[nDevice]);
     vg.setInputCloud (cloud);
     vg.filter (*(mycloud[nDevice]));
     pass_.setInputCloud(mycloud[nDevice]);
     pass_.filter(*(mycloud[nDevice]));
+    switch(nDevice){
+        case 0:
+            pcl::transformPointCloud(*mycloud[nDevice],*mycloud[nDevice],Aff2);
+        break;
+        case 1:
+            pcl::transformPointCloud(*mycloud[nDevice],*mycloud[nDevice],Aff2);
+            pcl::transformPointCloud(*mycloud[nDevice],*mycloud[nDevice],Aff);
+        break;
+    }
     //*mycloud[nDevice] = *cloud;
     if(saveClouds[nDevice]){
         cout << "Grabbing frame from kinect : " << nDevice << endl;
@@ -123,11 +114,12 @@ void StartDevice(int arg){
 
 void executeComplexICP(MyPointCloud::Ptr input, MyPointCloud::Ptr target, MyPointCloud::Ptr out){
     pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
-    icp.setMaxCorrespondenceDistance (1);
-    icp.setRANSACIterations(10);
-    icp.setRANSACOutlierRejectionThreshold(0.05);
-    icp.setMaximumIterations (100);
-    icp.setEuclideanFitnessEpsilon(0.000000005);
+    icp.setMaxCorrespondenceDistance (0.01);
+    //icp.setTransformationEpsilon(1e-10);
+    icp.setRANSACIterations(40);//10
+    icp.setRANSACOutlierRejectionThreshold(0.01);//0.05);
+    icp.setMaximumIterations (100);//100
+    //icp.setEuclideanFitnessEpsilon(0.000000005);
     icp.setInputCloud(input);
     icp.setInputTarget(target);
     icp.align(*out);
@@ -155,40 +147,18 @@ void executeICPonList(list<string> lst,string fileNameOut){
         executeComplexICP(inputPtr,megamesh,out);//cambio targetPtr con megamesh
         *megamesh += *out;
     }
-    //MyPointCloud::Ptr vuoto(new MyPointCloud);
-    //pcl::RandomSample< pcl::PointXYZRGBA >::RandomSample 	( 		) 
-    pcl::io::savePCDFileASCII(fileNameOut, *megamesh);	
-    //pcl::io::savePLYFileASCII("ciao.ply", *vuoto);
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr vuoto (new pcl::PointCloud<pcl::PointXYZRGBA>);
+     vuoto->width    = 500;
+     vuoto->height   =500;
+     vuoto->points.resize (vuoto->width * vuoto->height);
+     for (int i = 0; i < vuoto->points.size (); ++i){
+        vuoto->points[i].x = 1024 * rand () / (RAND_MAX + 1.0f);
+        vuoto->points[i].y = 1024 * rand () / (RAND_MAX + 1.0f);
+        vuoto->points[i].z = 1024 * rand () / (RAND_MAX + 1.0f);
+     }
+     pcl::io::savePCDFileASCII(fileNameOut, *megamesh);	
+     pcl::io::savePLYFileASCII("ciao.ply", *vuoto);
 }
-
-void executeKeypointsExtraction(list<string> lst){
-    list<string>::iterator it;
-    for(it=lst.begin()++;it!=lst.end();it++){
-        MyPointCloud target;
-
-        pcl::io::loadPCDFile((*it).c_str(),target);
-
-        range_image.createFromPointCloud (target, angular_resolution, pcl::deg2rad (360.0f), pcl::deg2rad (180.0f),
-                                     scene_sensor_pose, coordinate_frame, noise_level, min_range, border_size);
-        //range_image.integrateFarRanges (far_ranges);
-
-        if (setUnseenToMaxRange)
-            range_image.setUnseenToMaxRange ();
-
-        pcl::RangeImageBorderExtractor range_image_border_extractor;
-        pcl::NarfKeypoint narf_keypoint_detector (&range_image_border_extractor);
-        narf_keypoint_detector.setRangeImage (&range_image);
-        narf_keypoint_detector.getParameters ().support_size = support_size;
-        //narf_keypoint_detector.getParameters ().add_points_on_straight_edges = true;
-        //narf_keypoint_detector.getParameters ().distance_for_additional_points = 0.5;
-        
-        pcl::PointCloud<int> keypoint_indices;
-        narf_keypoint_detector.compute (keypoint_indices);
-        std::cout << "Found "<<keypoint_indices.points.size ()<<" key points.\n";
-    }
-    
-}
-
 
 void executeICP(int ncams){
     list<string>::iterator it;
@@ -217,7 +187,7 @@ void executeICP(int ncams){
         stringstream ss;
         ss<< "part_" << n<<".pcd";
         partString.push_back(ss.str());
-        executeKeypointsExtraction(camFiles[n]);
+//        executeKeypointsExtraction(camFiles[n]);
         t[n] = boost::thread(executeICPonList,camFiles[n], ss.str());
     }
     //Join su thread di elaborazione
@@ -298,10 +268,9 @@ int main(int argc, char** argv) {
     Eigen::Matrix<float,3,3> Ident;
     Eigen::Matrix<float,3,1> vett_colomn;
     Eigen::Matrix<float,1,4> vett_riga;
-    Eigen::Matrix<float,4,4> Aff,Aff2,A,B;
     cv::Mat R,T;
     cv::FileStorage fs("calibration_multikinect.yml", cv::FileStorage::READ);
-//    if(fs.isOpened()){
+
     fs["R_extrinsics"] >> R;
     fs["T_extrinsics"] >> T;
     cv2eigen(R,Reigen);
@@ -337,15 +306,11 @@ int main(int argc, char** argv) {
     
     Aff2 << Reigen3, Teigen3, 0.0, 0.0, 0.0, 1.0f;
     
-    
-    //p.AddPipelineStage("passthrough",&pass_);
-  //  p.AddPipelineStage("voxelgrid", &vg);
-    
     for(int i = 0; i<nDevices;i++)
         mycloud[i] = MyPointCloud::Ptr(new MyPointCloud);
     
     pass_.setFilterFieldName ("z");
-    pass_.setFilterLimits (0, 2.f);
+    pass_.setFilterLimits (0, 2.0f);
     vg.setLeafSize (0.005f, 0.005f, 0.005f);
     
     viewer.setBackgroundColor (0, 0, 0);
@@ -386,15 +351,13 @@ int main(int argc, char** argv) {
             boost::mutex::scoped_lock lock (mtx_);
             MyPointCloud::Ptr tmp_point;
             tmp_point.swap(mycloud[0]);
-            pcl::transformPointCloud(*tmp_point,*tmp_point,Aff2);
             viewer.updatePointCloud(tmp_point,"kinect1");
         }
         if(mycloud[1]){
             boost::mutex::scoped_lock lock (mtx_);
             MyPointCloud::Ptr second_tmp;
             second_tmp.swap(mycloud[1]);
-          pcl::transformPointCloud(*second_tmp,*second_tmp,Aff2);
-          pcl::transformPointCloud(*second_tmp,*second_tmp,Aff);
+          
             viewer.updatePointCloud(second_tmp,"kinect2");
             
         }
