@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+#include <pcl-1.5/pcl/io/openni_grabber.h>
 
 #include "ImageHelper.h"
 #include "ntk/camera/rgbd_grabber_factory.h"
@@ -15,33 +16,13 @@
 #include "ntk/camera/rgbd_frame_recorder.h"
 using namespace std;
 
-/*
- * 
- */
-int main(int argc, char** argv) {
-//    ntk::RGBDGrabberFactory gFactory;
-//    ntk::RGBDGrabberFactory::Params params;
-//
-//    params.directory = "./";
-//    params.type = ntk::RGBDGrabberFactory::OPENNI;
-//    params.calibration_file = "calibration";
-//    std::vector<ntk::RGBDGrabberFactory::GrabberData> grabbers;
-//    
-//    grabbers = gFactory.createGrabbers(params);
-//    ntk::RGBDGrabber* grabber = grabbers[0].grabber;
-//    ntk::RGBDProcessor* processor = grabbers[0].processor;
-//
-//    ntk::RGBDFrameRecorder frame_recorder ("calibration");
-//    frame_recorder.setFrameIndex(0);
-//    frame_recorder.setSaveOnlyRaw(true);
-//    frame_recorder.setUseBinaryRaw(true);
-//    frame_recorder.setSavePCLPointCloud(false);
 
+int main(int argc, char** argv) {
     stringstream ss;
-    ss << "#1";
+    ss << "A00364A16016051A";
     std::cout << sizeof(unsigned short) << std::endl;
     string deviceName = ss.str();
-    pcl::Grabber* grab = new pcl::OpenNIGrabber(deviceName.c_str());
+    pcl::Grabber* grab = new pcl::OpenNIGrabber(deviceName.c_str(), pcl::OpenNIGrabber::OpenNI_Default_Mode, pcl::OpenNIGrabber::OpenNI_SXGA_15Hz );
     boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&)> k =
                 boost::bind (&ImageHelper::GetRGBFrame, _1,1);
     grab->registerCallback(k);
@@ -53,10 +34,10 @@ int main(int argc, char** argv) {
     grab->start();
     grab->stop();
     stringstream ss1;
-    ss1 << "#2";
+    ss1 << "B00363210002036B";
     std::cout << sizeof(unsigned short) << std::endl;
     deviceName = ss1.str();
-    pcl::Grabber* grab1 = new pcl::OpenNIGrabber(deviceName.c_str());
+    pcl::Grabber* grab1 = new pcl::OpenNIGrabber(deviceName.c_str(), pcl::OpenNIGrabber::OpenNI_Default_Mode, pcl::OpenNIGrabber:: OpenNI_SXGA_15Hz);
     boost::function<void (const boost::shared_ptr<openni_wrapper::Image>&)> n =
                 boost::bind (&ImageHelper::GetRGBFrame, _1,2);
     grab1->registerCallback(n);

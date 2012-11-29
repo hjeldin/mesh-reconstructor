@@ -62,9 +62,9 @@ void * cloud_cb(const MyPointCloud::ConstPtr &cloud, int nDevice)
 {
     boost::mutex::scoped_lock lock(mtx_);
     mycloud[nDevice].reset(new MyPointCloud);
-    vg.setInputCloud (cloud);
-    vg.filter (*(mycloud[nDevice]));
-    pass_.setInputCloud(mycloud[nDevice]);
+    //vg.setInputCloud (cloud);
+    //vg.filter (*(mycloud[nDevice]));
+    pass_.setInputCloud(cloud);
     pass_.filter(*(mycloud[nDevice]));
     switch(nDevice){
         case 0:
@@ -114,11 +114,10 @@ void StartDevice(int arg){
 
 void executeComplexICP(MyPointCloud::Ptr input, MyPointCloud::Ptr target, MyPointCloud::Ptr out){
     pcl::IterativeClosestPoint<pcl::PointXYZRGBA, pcl::PointXYZRGBA> icp;
-    icp.setMaxCorrespondenceDistance (0.01);
-    //icp.setTransformationEpsilon(1e-10);
-    icp.setRANSACIterations(40);//10
+    icp.setMaxCorrespondenceDistance (0.001);
+    icp.setRANSACIterations(10);//10
     icp.setRANSACOutlierRejectionThreshold(0.01);//0.05);
-    icp.setMaximumIterations (100);//100
+    icp.setMaximumIterations (10);//100
     //icp.setEuclideanFitnessEpsilon(0.000000005);
     icp.setInputCloud(input);
     icp.setInputTarget(target);
@@ -188,12 +187,13 @@ void executeICP(int ncams){
         ss<< "part_" << n<<".pcd";
         partString.push_back(ss.str());
 //        executeKeypointsExtraction(camFiles[n]);
+        //executeICPonList(camFiles[n],ss.str());
         t[n] = boost::thread(executeICPonList,camFiles[n], ss.str());
     }
     //Join su thread di elaborazione
     for(int i = 0; i<ncams;i++){
-        cout << ANSI_COLOR_RED << "Joining on elaboration threads"<< ANSI_COLOR_RESET << endl;
-        t[i].join();
+       cout << ANSI_COLOR_RED << "Joining on elaboration threads"<< ANSI_COLOR_RESET << endl;
+       t[i].join();
     }
     //Eseguo ICP su elaborazione finale
     cout << ANSI_COLOR_RED << "Starting final elaboration" << ANSI_COLOR_RESET << endl;
@@ -296,13 +296,9 @@ int main(int argc, char** argv) {
     
     B << Reigen,vett_colomn, 0.0, 0.0, 0.0, 1.0;
     
-    cout << "Matrice di Traslazione ->" << endl;
-    cout << A << endl;
-    cout << "Matrice di Rotazione ->" << endl;
-    cout << B << endl; 
     cout << "Matrice di Rototraslazione ->" << endl;
     Aff= A*B;
-    cout << Aff << endl;
+    cout << ANSI_COLOR_GREEN << Aff << ANSI_COLOR_RESET << endl;
     
     Aff2 << Reigen3, Teigen3, 0.0, 0.0, 0.0, 1.0f;
     
@@ -317,12 +313,11 @@ int main(int argc, char** argv) {
     viewer.addCoordinateSystem (1.0);
     viewer.initCameraParameters ();
     int v1(0);
-    viewer.addText("Asynchronous", 10, 10, "v1 text", v1);
+    viewer.addText("Simultaneo", 10, 10, "v1 text", v1);
     viewer.addPointCloud<pcl::PointXYZRGBA>(firstCloud,"kinect1");
     viewer.addPointCloud<pcl::PointXYZRGBA>(secondCloud,"kinect2");
     viewer.addPointCloud<pcl::PointXYZRGBA>(thirdCloud,"kinect3");
     
-    //viewer.resetCameraViewpoint("kinect1");
     
     viewer.registerKeyboardCallback(keycallback,0);
     
@@ -340,10 +335,10 @@ int main(int argc, char** argv) {
         if(!updatedText){
             if(async){
                 viewer.removeText3D("v1 text", 0);
-                viewer.addText("Asynchronous",10,10,"v1 text",v1);
+                viewer.addText("Simultaneo",10,10,"v1 text",v1);
             } else {
                 viewer.removeText3D("v1 text", 0);
-                viewer.addText("Synchronous",10,10,"v1 text",v1);
+                viewer.addText("Sequenziale",10,10,"v1 text",v1);
             }
             updatedText = true;
         }
