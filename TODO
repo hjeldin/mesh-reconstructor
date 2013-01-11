@@ -1,0 +1,5 @@
+* Rename programmino.sh to something more significant
+* Add following postprocessing stages to pipeline:
+** Passthrough
+** Radius outlier removal
+** Voxel grid dilation (MLS)
